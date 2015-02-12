@@ -2,16 +2,54 @@
 
 import os.path
 import sys
+import gzip
 sys.path.append('/user/tmeyer/git/')
 sys.path.append('/user/tmeyer/workspace/script/python/bivalent_ligands')
 sys.path.append('/scratch/scratch/tmeyer/lib')
 
-#from kniopython.PDB.XStructure import XStructure
-from nem  import CleverFile
-
 
 #import pyximport; pyximport.install()
-from all_vs_all_atoms import find_collisions
+
+import numpy
+
+def find_collisions(atom_coord, min_dist):
+    cutoff_sq = 0.5 * 0.5
+    noa = len(atom_coord)
+   
+    coord =      np.zeros(3)
+    coord_comp = np.zeros(3)
+    dist_v =     np.zeros(3)
+    atoms_delete_list = []
+    
+#    cdef float atom_coord[2,3]
+#    for coor in atom_coord_np:
+#        for d in range(3):
+#            atom_coord[i,d] = atom_coord_np[i,d]
+    
+    
+    for i in range( noa - 1):
+        for d in range(3):
+            coord[d] = atom_coord[i,d]
+        
+        #print i
+        
+        for j in range(i+1, noa):
+            for d in range(3):
+                coord_comp[d] = atom_coord[j,d]
+            
+            for d in range(3):
+                dist_v[d] = coord[d] - coord_comp[d]
+            
+            dist_sq = 0
+            for d in range(3):
+                dist_sq = dist_sq + dist_v[d] * dist_v[d]
+            #dist = np.sqrt(np.dot( dist_v, dist_v ))
+            
+            if dist_sq < cutoff_sq:
+                atoms_delete_list.append(j)
+            
+    return atoms_delete_list
+
 
 
 import numpy as np
@@ -295,7 +333,7 @@ class pdb_from_biopython(object):
         #self.all_structs = XStructure.from_file(f)
         # If files are not zipped.
         #f = open(filename)
-        f = CleverFile(filename)
+        f = gzip.open(filename)
         self.all_structs = self.parser.get_structure(name, f)
         
         
@@ -2008,9 +2046,10 @@ class pdb_from_biopython(object):
 
 if __name__ == '__main__':
 
-    filename = '/scratch/scratch/pdb/pdb_bio/hi/1hiq.pdb1.gz'
+    filename = 'pdb_bio/d6/1d6r.pdb1.gz'
+    #filename = 'pdb_bio/mt/2mta.pdb1.gz'
 
     pdb = pdb_from_biopython()
     pdb.parse_pdb_file(filename)
     pdb.merge_models()
-    pdb.write_pdb_file('/user/tmeyer/temp/merged1.pdb')
+    pdb.write_pdb_file('/tmp/merged1.pdb')
