@@ -8,7 +8,7 @@ Created on Tue Apr  3 18:13:35 2012
 import os
 
 import sys
-sys.path.append('/user/tmeyer/workspace/script/python/bivalent_ligands')
+#sys.path.append('/user/tmeyer/workspace/script/python/bivalent_ligands')
 
 
 def merge_biounits(pdb_file_list):
@@ -80,8 +80,8 @@ def merge_biounits(pdb_file_list):
 
 if __name__ == '__main__':
 
-    source_folder = '/scratch/scratch/pdb/pdb_bio/'
-    target_folder = '/public/external/backups/tmeyer/pdb_bio_merged/'
+    source_folder = './pdb_bio/'
+    target_folder = './pdb_bio_merged/'
 
     # This file contains all error messages that occured during parsing and
     # merging the biological assamblies.
