@@ -8,13 +8,22 @@ Created on Tue Apr  3 18:13:35 2012
 import os
 
 import sys
+
+
+from multiprocessing import Pool, Value, Lock
+
 #sys.path.append('/user/tmeyer/workspace/script/python/bivalent_ligands')
 
 
 def merge_biounits(pdb_file_list):
-
     import pdb_analysis
 
+    myjobid = 0
+    with lock:
+        myjobid = number.value
+        number.value += 1
+        
+    
     errors = ''
 
     MergeError  = pdb_analysis.pdb_from_biopython.MergeError
@@ -30,7 +39,8 @@ def merge_biounits(pdb_file_list):
             continue
         else:
             #print '# processing ' + str(i) + ' of ' + str(num_of_pdbs) + ' : ' + pdb_file
-            print 'processing: ' + pdb_file
+            with lock:
+                print str(myjobid) + ' processing: ' + pdb_file
 
         filesize = os.path.getsize(source_filename)
         if filesize / 1e6 > 20:
@@ -46,8 +56,8 @@ def merge_biounits(pdb_file_list):
 
             # Merge models in biological assambly.
             pdb.parse_pdb_file(str(source_filename), quiet=True)
-
-            print 'subunits: ' + str(len(pdb.all_structs))
+            with lock:
+                print str(myjobid) + ' subunits: ' + str(len(pdb.all_structs))
 
 #            if len(pdb.all_structs) > 100:
 #                errors += 'filename: ' + source_filename + '\n'
@@ -76,6 +86,13 @@ def merge_biounits(pdb_file_list):
 
 
 
+number = Value('i', 0)
+lock = Lock()
+
+def initializer(*args):
+    global number, lock
+    number, lock = args
+    
 
 
 if __name__ == '__main__':
@@ -139,16 +156,22 @@ if __name__ == '__main__':
             files_splitted.append(current_files)
             current_files = []
 
-
+#test!
+    del files_splitted[100:]
     ### submitt jobs ###
     #jobs_submitted = []
-    files_left = num_of_pdbs
-    for file_chunk in files_splitted:
-        errors = merge_biounits(file_chunk)
-        if errors != '':
-            f_err.write(errors + '\n\n')
-        f_err.flush()
-        files_left -= max_files
+    
+    
+    pool = Pool(2, initializer, (number, lock)) 
+    pool.map(merge_biounits, files_splitted)
+    
+#    files_left = num_of_pdbs
+#    for file_chunk in files_splitted:
+#        errors = merge_biounits(file_chunk)
+#        if errors != '':
+#            f_err.write(errors + '\n\n')
+#        f_err.flush()
+#        files_left -= max_files
 
     f_err.close()
 
