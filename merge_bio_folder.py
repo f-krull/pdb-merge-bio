@@ -6,13 +6,11 @@ Created on Tue Apr  3 18:13:35 2012
 """
 
 import os
-
 import sys
 
 
-from multiprocessing import Pool, Value, Lock
+from multiprocessing import Pool, Value, Lock, Array
 
-#sys.path.append('/user/tmeyer/workspace/script/python/bivalent_ligands')
 
 
 def merge_biounits(pdb_file_list):
@@ -20,8 +18,8 @@ def merge_biounits(pdb_file_list):
 
     myjobid = 0
     with lock:
-        myjobid = number.value
-        number.value += 1
+        myjobid = jobid.value
+        jobid.value += 1
         
     
     errors = ''
@@ -35,10 +33,10 @@ def merge_biounits(pdb_file_list):
         (pdb_file, source_filename, target_filename) = pdb_file_names
 
         if os.path.exists(target_filename):
-            #print 'skipping: ' + pdb_file
+            with lock:
+                print 'skipping: ' + pdb_file
             continue
         else:
-            #print '# processing ' + str(i) + ' of ' + str(num_of_pdbs) + ' : ' + pdb_file
             with lock:
                 print str(myjobid) + ' processing: ' + pdb_file
 
@@ -56,8 +54,8 @@ def merge_biounits(pdb_file_list):
 
             # Merge models in biological assambly.
             pdb.parse_pdb_file(str(source_filename), quiet=True)
-            with lock:
-                print str(myjobid) + ' subunits: ' + str(len(pdb.all_structs))
+#            with lock:
+#                print str(myjobid) + '             ' + pdb_file + ' subunits: ' + str(len(pdb.all_structs))
 
 #            if len(pdb.all_structs) > 100:
 #                errors += 'filename: ' + source_filename + '\n'
@@ -80,31 +78,51 @@ def merge_biounits(pdb_file_list):
             e_str = "Error: %s" % e
             errors += 'message: "' + e_str + '"\n\n'
             continue
+    # write any error messages to log-file
+    if errors != "":
+        with lock:
+            f_err = open(logFilename.value, 'w')
+            f_err.write(errors + '\n\n')
+            f_err.flush()
+            f_err.close()
 
 
-    return str(errors)
-
-
-
-number = Value('i', 0)
+logFilename = Array('c','merge_errors.log')
+jobid = Value('i', 0)
 lock = Lock()
 
 def initializer(*args):
-    global number, lock
-    number, lock = args
+    global jobid, lock, logFilename
+    jobid, lock, logFilename = args
     
 
 
+
+
+import argparse
+
+
+
 if __name__ == '__main__':
+
+    numthreads = 1;
+
+    parser = argparse.ArgumentParser()
+#    parser.add_argument("echo", help="echo the string you use here")
+    parser.add_argument("--numthreads", help="specify the number of threads to use")
+    parser.add_argument("--test", help="only process the first 10 PDBs for testing")
+    args = parser.parse_args()
+    
+    if args.numthreads:
+        numthreads = int(args.numthreads)
+    
+    print "using " + str(numthreads) + " threads"
 
     source_folder = './pdb_bio/'
     target_folder = './pdb_bio_merged/'
 
     # This file contains all error messages that occured during parsing and
     # merging the biological assamblies.
-    f_err = open(target_folder + '/errors.log', 'w')
-
-
 
     subfolder = os.listdir(source_folder)
 
@@ -138,10 +156,8 @@ if __name__ == '__main__':
                 if not os.path.exists(target_filename):
                     pdb_file_list.append( (pdb_file, source_filename, target_filename) )
 
-
     num_of_pdbs = len(pdb_file_list)
     print 'I found ' + str(num_of_pdbs) + ' pdb files.'
-
 
     count = 0
     max_files = 1
@@ -156,22 +172,10 @@ if __name__ == '__main__':
             files_splitted.append(current_files)
             current_files = []
 
-#test!
-    del files_splitted[100:]
-    ### submitt jobs ###
-    #jobs_submitted = []
+    if args.test:
+        del files_splitted[10:]
     
-    
-    pool = Pool(2, initializer, (number, lock)) 
+    pool = Pool(numthreads, initializer, (jobid, lock, logFilename)) 
     pool.map(merge_biounits, files_splitted)
     
-#    files_left = num_of_pdbs
-#    for file_chunk in files_splitted:
-#        errors = merge_biounits(file_chunk)
-#        if errors != '':
-#            f_err.write(errors + '\n\n')
-#        f_err.flush()
-#        files_left -= max_files
-
-    f_err.close()
 
