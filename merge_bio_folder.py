@@ -41,6 +41,7 @@ def merge_biounits(pdb_file_list):
                 print str(myjobid) + ' processing: ' + pdb_file
 
         filesize = os.path.getsize(source_filename)
+        # filesize*100 = mem-usage -> 3M PDB-gz needs about 300M memory
         if filesize / 1e6 > 20:
             # File is too large.
             errors += 'filename: ' + source_filename + '\n'
