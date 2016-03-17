@@ -12,7 +12,6 @@ import sys
 from multiprocessing import Pool, Value, Lock, Array
 
 
-
 def merge_biounits(pdb_file_list):
     import pdb_analysis
 
@@ -21,17 +20,13 @@ def merge_biounits(pdb_file_list):
         myjobid = jobid.value
         jobid.value += 1
         
-    
     errors = ''
-
     MergeError  = pdb_analysis.pdb_from_biopython.MergeError
     IO_Error    = pdb_analysis.pdb_from_biopython.IO_Error
     HeaderError = pdb_analysis.pdb_from_biopython.HeaderError
 
     for i, pdb_file_names in enumerate(pdb_file_list):
-
         (pdb_file, source_filename, target_filename) = pdb_file_names
-
         if os.path.exists(target_filename):
             with lock:
                 print 'skipping: ' + pdb_file
@@ -42,48 +37,34 @@ def merge_biounits(pdb_file_list):
 
         filesize = os.path.getsize(source_filename)
         # filesize*100 = mem-usage -> 3M PDB-gz needs about 300M memory
-        if filesize / 1e6 > 20:
-            # File is too large.
-            errors += 'filename: ' + source_filename + '\n'
-            errors += 'message: "' + 'This structure seems to be too large: '
-            errors += str(filesize / 1e6) + ' MB'  + '"\n\n'
+        if filesize / 1e3 > g_threadMaxmem_kb:
+            errors += 'error ' + source_filename + ' '
+            errors += 'This structure seems to be too large ('
+            errors += str(filesize / 1e3) + ' kB'  + ')\n'
             continue
 
         pdb = pdb_analysis.pdb_from_biopython()
-
         try:
-
             # Merge models in biological assambly.
             pdb.parse_pdb_file(str(source_filename), quiet=True)
-#            with lock:
-#                print str(myjobid) + '             ' + pdb_file + ' subunits: ' + str(len(pdb.all_structs))
-
-#            if len(pdb.all_structs) > 100:
-#                errors += 'filename: ' + source_filename + '\n'
-#                errors += 'message: "' + 'This structure seems to be too large: ' + str(len(pdb.all_structs)) + ' subunits!'  + '"\n\n'
-#                continue
-
-            #if not pdb.is_nmr:
             pdb.merge_models(overwrite=False)
-
             pdb.write_pdb_file(str(target_filename))
-
         except (ValueError, IndexError, IO_Error, HeaderError, MergeError) as inst:
             #f_err.write('### ERROR: pdb-file could not be parsed.\n')
-            errors += 'filename: ' + source_filename + '\n'
-            errors += 'message: "' + inst.__str__() + '"\n\n'
+            errors += 'error ' + source_filename + ' '
+            errors += 'message: "' + inst.__str__() + '" \n'
             continue
         except:
-            errors += 'filename: ' + source_filename + '\n'
+            errors += 'error ' + source_filename + ' '
             e = sys.exc_info()[1]
             e_str = "Error: %s" % e
-            errors += 'message: "' + e_str + '"\n\n'
+            errors += 'message: ' + e_str + '\n'
             continue
     # write any error messages to log-file
     if errors != "":
         with lock:
-            f_err = open(logFilename.value, 'w')
-            f_err.write(errors + '\n\n')
+            f_err = open(logFilename.value, 'a')
+            f_err.write(errors)
             f_err.flush()
             f_err.close()
 
@@ -91,6 +72,8 @@ def merge_biounits(pdb_file_list):
 logFilename = Array('c','merge_errors.log')
 jobid = Value('i', 0)
 lock = Lock()
+g_threadMaxmem_kb = 0
+
 
 def initializer(*args):
     global jobid, lock, logFilename
@@ -106,18 +89,31 @@ import argparse
 
 if __name__ == '__main__':
 
-    numthreads = 1;
+    numthreads = 1
 
     parser = argparse.ArgumentParser()
 #    parser.add_argument("echo", help="echo the string you use here")
     parser.add_argument("--numthreads", help="specify the number of threads to use")
+    parser.add_argument("--maxmem", help="specify the maximum amount of memory to use (kB)")
     parser.add_argument("--test", help="only process the first 10 PDBs for testing")
     args = parser.parse_args()
     
     if args.numthreads:
         numthreads = int(args.numthreads)
     
-    print "using " + str(numthreads) + " threads"
+    if args.maxmem:
+        g_threadMaxmem_kb = int(args.maxmem) / numthreads
+    else:
+        # filesize*100 = mem-usage -> 20M PDB-gz needs about 2000M memory
+        g_threadMaxmem_kb = 20 * 10e3;
+        
+        
+        
+    
+    print "Using " + str(numthreads) + " threads"
+    print "Using " + str(g_threadMaxmem_kb * numthreads) + " kB of memory"
+    
+    
 
     source_folder = './pdb_bio/'
     target_folder = './pdb_bio_merged/'
@@ -145,20 +141,12 @@ if __name__ == '__main__':
                 source_filename = current_source_subfolder + '/' + pdb_file
                 ### for bio folder
                 target_filename = current_target_subfolder + '/' + pdb_file[:-3]
-                ### for pdb folder
-                # pdb_code = pdb_file[3:-7]
-                # assert len(pdb_code) == 4
-                # target_filename = current_target_subfolder + '/' + pdb_code + '.pdb0'
-
-    #            if pdb_file.find('.ent') > 0:
-    #                print source_filename
-    #                continue
-
+                # skip existing files
                 if not os.path.exists(target_filename):
                     pdb_file_list.append( (pdb_file, source_filename, target_filename) )
 
     num_of_pdbs = len(pdb_file_list)
-    print 'I found ' + str(num_of_pdbs) + ' pdb files.'
+    print 'Found ' + str(num_of_pdbs) + ' pdb files.'
 
     count = 0
     max_files = 1
@@ -177,6 +165,11 @@ if __name__ == '__main__':
         del files_splitted[10:]
     
     pool = Pool(numthreads, initializer, (jobid, lock, logFilename)) 
+    # clear log file
+    f_err = open(logFilename.value, 'w')
+    f_err.write("")
+    f_err.flush()
+    f_err.close()
     pool.map(merge_biounits, files_splitted)
     
 
