@@ -30,10 +30,12 @@ def merge_biounits(pdb_file_list):
         if os.path.exists(target_filename):
             with lock:
                 print 'skipping: ' + pdb_file
+                sys.stdout.flush()
             continue
         else:
             with lock:
                 print str(myjobid) + ' processing: ' + pdb_file
+                sys.stdout.flush()
 
         filesize = os.path.getsize(source_filename)
         # filesize*100 = mem-usage -> 3M PDB-gz needs about 300M memory
@@ -155,12 +157,11 @@ if __name__ == '__main__':
     for pdb_file_names in pdb_file_list:
         current_files.append(pdb_file_names)
         count += 1
-
         if count >= max_files:
             count = 0
             files_splitted.append(current_files)
             current_files = []
-
+    # if test: use only a small sample 
     if args.test:
         del files_splitted[10:]
     
