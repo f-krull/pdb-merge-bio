@@ -39,7 +39,7 @@ def merge_biounits(pdb_file_list):
 
         filesize = os.path.getsize(source_filename)
         # filesize*100 = mem-usage -> 3M PDB-gz needs about 300M memory
-        if filesize / 1e3 > g_threadMaxmem_kb:
+        if (filesize * 100) > g_threadMaxmem_kb * 1e3:
             errors += 'error ' + source_filename + ' '
             errors += 'This structure seems to be too large ('
             errors += str(filesize / 1e3) + ' kB'  + ')\n'
