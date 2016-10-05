@@ -5,12 +5,13 @@ Created on Tue Apr  3 18:13:35 2012
 @author: tmeyer
 """
 
+#------------------------------------------------------------------------------
+
 import os
 import sys
-
-
 from multiprocessing import Pool, Value, Lock, Array
 
+#------------------------------------------------------------------------------
 
 def merge_biounits(pdb_file_list):
     import pdb_analysis
@@ -76,12 +77,13 @@ jobid = Value('i', 0)
 lock = Lock()
 g_threadMaxmem_kb = 0
 
+#------------------------------------------------------------------------------
 
 def initializer(*args):
     global jobid, lock, logFilename
     jobid, lock, logFilename = args
     
-
+#------------------------------------------------------------------------------
 
 
 
@@ -91,29 +93,36 @@ import argparse
 
 if __name__ == '__main__':
 
-    numthreads = 1
+    param_numthreads = 1
+    param_dotest = False
+
 
     parser = argparse.ArgumentParser()
-#    parser.add_argument("echo", help="echo the string you use here")
     parser.add_argument("--numthreads", help="specify the number of threads to use")
     parser.add_argument("--maxmem", help="specify the maximum amount of memory to use (kB)")
-    parser.add_argument("--test", help="only process the first 10 PDBs for testing")
+    parser.add_argument("--test", action="store_true", help="only process the first 10 PDBs for testing")
+    
     args = parser.parse_args()
     
     if args.numthreads:
-        numthreads = int(args.numthreads)
-    
+        param_numthreads = int(args.numthreads)
+    else:
+        param_numthreads = 1
+
     if args.maxmem:
         g_threadMaxmem_kb = int(args.maxmem) / numthreads
     else:
         # filesize*100 = mem-usage -> 20M PDB-gz needs about 2000M memory
-        g_threadMaxmem_kb = 20 * 10e3;
+        g_threadMaxmem_kb = 20 * 1e3;
+
+    if args.test:
+        param_dotest = True
         
         
         
     
-    print "Using " + str(numthreads) + " threads"
-    print "Using " + str(g_threadMaxmem_kb * numthreads) + " kB of memory"
+    print "Using " + str(param_numthreads) + " threads"
+    print "Using " + str(g_threadMaxmem_kb * param_numthreads) + " kB of memory"
     
     
 
@@ -162,15 +171,16 @@ if __name__ == '__main__':
             files_splitted.append(current_files)
             current_files = []
     # if test: use only a small sample 
-    if args.test:
+    if param_dotest:
         del files_splitted[10:]
     
-    pool = Pool(numthreads, initializer, (jobid, lock, logFilename)) 
+    pool = Pool(param_numthreads, initializer, (jobid, lock, logFilename)) 
     # clear log file
     f_err = open(logFilename.value, 'w')
     f_err.write("")
     f_err.flush()
     f_err.close()
+    # start threads
     pool.map(merge_biounits, files_splitted)
     
 
