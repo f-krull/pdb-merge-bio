@@ -110,7 +110,7 @@ if __name__ == '__main__':
         param_numthreads = 1
 
     if args.maxmem:
-        g_threadMaxmem_kb = int(args.maxmem) / numthreads
+        g_threadMaxmem_kb = int(args.maxmem) / param_numthreads
     else:
         # filesize*100 = mem-usage -> 20M PDB-gz needs about 2000M memory
         g_threadMaxmem_kb = 20 * 1e3;
