@@ -1956,13 +1956,13 @@ class pdb_from_biopython(object):
 
 
 
-            print "---"
+            print("---")
             for o in occurence:
-                print " next:"
+                print(" next:")
                 for res in o:
-                    print res['name'] + ' : ' \
-                            + res['chain'] + ' : ' + str(res['resid'])
-            print "---"
+                    print(res['name'] + ' : ' \
+                            + res['chain'] + ' : ' + str(res['resid']))
+            print("---")
             
             
             ############################
@@ -2021,12 +2021,12 @@ class pdb_from_biopython(object):
             
 
 
-            print "filtered:"
+            print("filtered:")
             for o in occurence:
-                print "next:"
+                print("next:")
                 for res in o:
-                    print res['name'] + ' : ' \
-                            + res['chain'] + ' : ' + str(res['resid'])
+                    print(res['name'] + ' : ' \
+                            + res['chain'] + ' : ' + str(res['resid']))
         
             
             return occurence

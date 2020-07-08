@@ -30,12 +30,12 @@ def merge_biounits(pdb_file_list):
         (pdb_file, source_filename, target_filename) = pdb_file_names
         if os.path.exists(target_filename):
             with lock:
-                print 'skipping: ' + pdb_file
+                print('skipping: ' + pdb_file)
                 sys.stdout.flush()
             continue
         else:
             with lock:
-                print str(myjobid) + ' processing: ' + pdb_file
+                print(str(myjobid) + ' processing: ' + pdb_file)
                 sys.stdout.flush()
 
         filesize = os.path.getsize(source_filename)
@@ -66,13 +66,13 @@ def merge_biounits(pdb_file_list):
     # write any error messages to log-file
     if errors != "":
         with lock:
-            f_err = open(logFilename.value, 'a')
+            f_err = open(logFilename[:], 'a')
             f_err.write(errors)
             f_err.flush()
             f_err.close()
 
 
-logFilename = Array('c','merge_errors.log')
+logFilename = Array('u','merge_errors.log')
 jobid = Value('i', 0)
 lock = Lock()
 g_threadMaxmem_kb = 0
@@ -121,8 +121,8 @@ if __name__ == '__main__':
         
         
     
-    print "Using " + str(param_numthreads) + " threads"
-    print "Using " + str(g_threadMaxmem_kb * param_numthreads) + " kB of memory"
+    print("Using " + str(param_numthreads) + " threads")
+    print("Using " + str(g_threadMaxmem_kb * param_numthreads) + " kB of memory")
     
     
 
@@ -157,7 +157,7 @@ if __name__ == '__main__':
                     pdb_file_list.append( (pdb_file, source_filename, target_filename) )
 
     num_of_pdbs = len(pdb_file_list)
-    print 'Found ' + str(num_of_pdbs) + ' pdb files.'
+    print('Found ' + str(num_of_pdbs) + ' pdb files.')
 
     count = 0
     max_files = 1
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     
     pool = Pool(param_numthreads, initializer, (jobid, lock, logFilename)) 
     # clear log file
-    f_err = open(logFilename.value, 'w')
+    f_err = open(logFilename[:], 'w')
     f_err.write("")
     f_err.flush()
     f_err.close()
