@@ -88,7 +88,7 @@ def is_std_aa(name):
               'TYR' : 'Y', \
               'VAL' : 'V'}
     
-    if std_aa.has_key(name) > 0:
+    if name in std_aa > 0:
         return 1
     else:
         return 0
@@ -174,7 +174,7 @@ class pdb_from_biopython(object):
         # Analyse LINK entries if available
         self.header_link = []
         
-        if self.header.has_key("LINK"):
+        if "LINK" in self.header:
             for line in self.header["LINK"]:
                 
                 # use columwise definition
@@ -264,8 +264,8 @@ class pdb_from_biopython(object):
                 for c in self.struct.get_list():
                     chain_list[c.get_id()] = 1
                     
-                if not chain_list.has_key(entries[4]) or \
-                        not chain_list.has_key(entries[10]):
+                if entries[4] not in chain_list or \
+                        entries[10] not in chain_list:
                     continue
                 
                 # Skip entry if "altLoc Alternate location indicator" is not
@@ -333,7 +333,7 @@ class pdb_from_biopython(object):
         #self.all_structs = XStructure.from_file(f)
         # If files are not zipped.
         #f = open(filename)
-        f = gzip.open(filename)
+        f = gzip.open(filename, "rt")
         self.all_structs = self.parser.get_structure(name, f)
         
         
@@ -356,7 +356,7 @@ class pdb_from_biopython(object):
                 else:
                     entry_name = fields[0]
 
-                if self.header.has_key(entry_name):
+                if entry_name in self.header:
                     self.header[entry_name].append( line )
                 else:
                     self.header[entry_name] = []
@@ -408,7 +408,7 @@ class pdb_from_biopython(object):
                 #org_header.append('')
                 #org_header.append('The following remarks are an excerpt from the header of the original PDB file.')
                 for key in org_header_fields:
-                    if self.header.has_key(key):
+                    if key in self.header:
                         for line in self.header[key]:
                             org_header.append( line.strip('\n') )
 
@@ -504,7 +504,7 @@ class pdb_from_biopython(object):
             Typically select is a subclass of L{Select}.
         """
         get_atom_line=self._get_atom_line
-        if isinstance(file, basestring):
+        if isinstance(file, str):
             fp=open(file, "w")
             close_file=1
         else:
@@ -587,7 +587,7 @@ class pdb_from_biopython(object):
             s += 'Chainid to be increased: ' + cid
             raise self.MergeError(s)
             
-        uc = ord( cid.decode() )
+        uc = ord( cid )
         
         
         if uc == 90:
@@ -605,7 +605,7 @@ class pdb_from_biopython(object):
             s += 'Chainid to be increased: ' + cid
             raise self.MergeError(s)
             
-        return unichr(uc).encode()
+        return chr(uc)
 
     
     def merge_models(self, overwrite=False):
@@ -670,7 +670,7 @@ class pdb_from_biopython(object):
         
         # Only x-ray structures are merged.
         is_xray = False
-        if self.header.has_key('EXPDTA'):
+        if 'EXPDTA' in self.header:
             if self.header['EXPDTA'][0].find('X-RAY') == -1:
                 s =  'ERROR in \"pdb_from_biopython.merge_models\": '
                 s += 'Structure is not resolved by x-ray diffraction: '
@@ -755,14 +755,14 @@ class pdb_from_biopython(object):
                 # If they are bond add an connection entry.
                 # A residue is define by: (chainid and residue ID)
                 res_description      = ( chainid, res.get_id() )
-                if not model_connections.has_key( res_description ):
+                if res_description not in model_connections:
                     model_connections[ res_description ] = {}
                     
                 if is_bond:
                     res_comp_description = ( chainid_comp, res_comp.get_id() )
                     model_connections[ res_description ][ res_comp_description ] = True
                     
-                    if not model_connections.has_key( res_comp_description ):
+                    if res_comp_description not in model_connections:
                         model_connections[ res_comp_description ] = {}
                     model_connections[ res_comp_description ][ res_description ] = True
             
@@ -849,8 +849,7 @@ class pdb_from_biopython(object):
                             # directly or indirectly connected to an ATOM residue.
                             if not het_residues.has_id( res_comp.get_id() ):
                             
-                                if all_het_connections[ struct_id ]\
-                                        [ res_description ].has_key( res_comp_description ):
+                                if res_comp_description in all_het_connections[ struct_id ][ res_description ]:
                                             
                                     het_residues.detach_child( res.get_id() )
                                     something_changed = True
@@ -920,7 +919,7 @@ class pdb_from_biopython(object):
                     
                     #resid = res_description[1][1]
                     resid = 1
-                    while used_water_residues.has_key(resid):
+                    while resid in used_water_residues:
                         resid += 1
                     used_water_residues[resid] = True
                     
@@ -948,7 +947,7 @@ class pdb_from_biopython(object):
                 # each residue
                 # Find a new residue to start with
                 for res_description in res_descr_list:
-                    if not res_done.has_key( res_description ):
+                    if res_description not in res_done:
                         break
                 else:
                     # All residues have been added to the new chain list. -> stopping
@@ -960,7 +959,7 @@ class pdb_from_biopython(object):
                 
                 # Make sure, that no resid is used twice.
                 resid = res_description[1][1]
-                while used_resid.has_key(resid):
+                while resid in used_resid:
                     resid += 1
                 used_resid[resid] = True
                 
@@ -984,7 +983,7 @@ class pdb_from_biopython(object):
                     res_description = to_look_at_list.pop()
                     
                     for res_desc_partner in all_het_connections[m_id][ res_description ].keys():
-                        if not res_done.has_key( res_desc_partner ):
+                        if res_desc_partner not in res_done:
                             
                             to_look_at_list.append( res_desc_partner )
                             res_done[res_desc_partner] = True
@@ -993,7 +992,7 @@ class pdb_from_biopython(object):
                                     .child_dict[ res_desc_partner[0] ]\
                                     .child_dict[ res_desc_partner[1] ]
                             
-                            while used_resid.has_key(resid):
+                            while resid in used_resid:
                                 resid += 1
                             used_resid[resid] = True
                             
@@ -1019,7 +1018,7 @@ class pdb_from_biopython(object):
 
         for res in monomer_chain_list:
             resid = res.get_id()[1]
-            while used_monomer_residues.has_key(resid):
+            while resid in used_monomer_residue:
                 resid += 1
                     
             res.id = (res.id[0],\
@@ -1139,7 +1138,7 @@ class pdb_from_biopython(object):
             del_atom['resname'] = atom_comp.resname
             del_atom['model'] = c_comp_nr
             
-            if not atom_delete_dict.has_key( (c_comp_nr, res_comp_id, atom_comp.get_id()) ):
+            if (c_comp_nr, res_comp_id, atom_comp.get_id()) not in atom_delete_dict:
                 deleted_atoms.append(del_atom)
                 atom_delete_dict[ (c_comp_nr, res_comp_id, atom_comp.get_id()) ] = True
 
@@ -1242,11 +1241,11 @@ class pdb_from_biopython(object):
                         s += res.old_identity
                         raise self.MergeError(s)
 
-                    if not prot_chain_changes.has_key(c_id):
+                    if c_id not in prot_chain_changes:
                         if not self.too_many_chains:
-                            prot_chain_changes[c_id] = reg_m.groups()[0]
+                            prot_chain_changes[c_id] = str(reg_m.groups()[0])
                         else:
-                            prot_chain_changes[segid] = reg_m.groups()[0]
+                            prot_chain_changes[segid] = str(reg_m.groups()[0])
                     else:
                         inconsitence = False
                         if not self.too_many_chains:
@@ -1354,7 +1353,7 @@ class pdb_from_biopython(object):
                 atoms_left_in_residue      = len(res.child_list)
                 
                 # Make sure, that no resid is used twice in one chain.
-                while used_resid.has_key(resid):
+                while resid in used_resid:
                     resid += 1
                 used_resid[resid] = True
                 
@@ -1405,7 +1404,7 @@ class pdb_from_biopython(object):
                     for atm in altloc_atoms:
                         atm_id = atm.get_id()
                         
-                        if atom_delete_dict.has_key( (c_nr, res_id, atm_id) ):
+                        if (c_nr, res_id, atm_id) in atom_delete_dict:
                             atoms_left_in_residue -= 1
                             continue
                         
