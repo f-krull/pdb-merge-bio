@@ -1018,7 +1018,7 @@ class pdb_from_biopython(object):
 
         for res in monomer_chain_list:
             resid = res.get_id()[1]
-            while resid in used_monomer_residue:
+            while resid in used_monomer_residues:
                 resid += 1
                     
             res.id = (res.id[0],\
