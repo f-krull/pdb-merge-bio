@@ -51,7 +51,8 @@ def merge_biounits(pdb_file_list):
             # Merge models in biological assambly.
             pdb.parse_pdb_file(str(source_filename), quiet=True)
             pdb.merge_models(overwrite=False)
-            pdb.write_pdb_file(str(target_filename))
+            pdb.write_pdb_file(str(target_filename) + "_tmp")
+            os.rename(str(target_filename) + "_tmp", str(target_filename))
         except (ValueError, IndexError, IO_Error, HeaderError, MergeError) as inst:
             #f_err.write('### ERROR: pdb-file could not be parsed.\n')
             errors += 'error ' + source_filename + ' '
@@ -101,6 +102,8 @@ if __name__ == '__main__':
     parser.add_argument("--numthreads", help="specify the number of threads to use")
     parser.add_argument("--maxmem", help="specify the maximum amount of memory to use (kB)")
     parser.add_argument("--test", action="store_true", help="only process the first 10 PDBs for testing")
+    parser.add_argument("--src", help="path to pdb_bio folder")
+    parser.add_argument("--dst", help="path to output folder")
     
     args = parser.parse_args()
     
@@ -126,8 +129,8 @@ if __name__ == '__main__':
     
     
 
-    source_folder = './pdb_bio/'
-    target_folder = './pdb_bio_merged/'
+    source_folder = args.src
+    target_folder = args.dst
 
     # This file contains all error messages that occured during parsing and
     # merging the biological assamblies.
