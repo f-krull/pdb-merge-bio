@@ -99,8 +99,8 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--numthreads", help="specify the number of threads to use")
-    parser.add_argument("--maxmem", help="specify the maximum amount of memory to use (kB)")
+    parser.add_argument("--numthreads", help="number of threads to use")
+    parser.add_argument("--maxmem", help="max. amount of memory to use per thread (kB)")
     parser.add_argument("--test", action="store_true", help="only process the first 10 PDBs for testing")
     parser.add_argument("--src", help="path to pdb_bio folder")
     parser.add_argument("--dst", help="path to output folder")
@@ -113,7 +113,7 @@ if __name__ == '__main__':
         param_numthreads = 1
 
     if args.maxmem:
-        g_threadMaxmem_kb = int(args.maxmem) / param_numthreads
+        g_threadMaxmem_kb = int(args.maxmem)
     else:
         # filesize*100 = mem-usage -> 20M PDB-gz needs about 2000M memory
         g_threadMaxmem_kb = 20 * 1e3;
