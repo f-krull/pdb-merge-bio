@@ -71,6 +71,7 @@ def merge_biounits(pdb_file_list):
             f_err.write(errors)
             f_err.flush()
             f_err.close()
+    return True
 
 
 logFilename = Array('u','merge_errors.log')
@@ -177,13 +178,12 @@ if __name__ == '__main__':
     if param_dotest:
         del files_splitted[10:]
     
-    pool = Pool(param_numthreads, initializer, (jobid, lock, logFilename)) 
-    # clear log file
-    f_err = open(logFilename[:], 'w')
-    f_err.write("")
-    f_err.flush()
-    f_err.close()
-    # start threads
-    pool.map(merge_biounits, files_splitted)
-    
-
+    with Pool(param_numthreads, initializer, (jobid, lock, logFilename)) as pool:
+        # clear log file
+        f_err = open(logFilename[:], 'w')
+        f_err.write("")
+        f_err.flush()
+        f_err.close()
+        # start threads
+        for ret in pool.imap_unordered(merge_biounits, files_splitted, chunksize=1):
+            pass
