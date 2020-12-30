@@ -187,6 +187,3 @@ if __name__ == '__main__':
         # start threads
         for ret in pool.imap_unordered(merge_biounits, files_splitted, chunksize=1):
             pass
-        
-        
-
